@@ -27,8 +27,10 @@ public class ProductController {
 
     @GetMapping
     public List<ProductResponse> findAll(
-            @RequestParam(required = false) Long category, @RequestParam(required = false) String name) {
-        return productService.findAllActive(category, name);
+            @RequestParam(required = false) Long category,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean onSale) {
+        return productService.findAllActive(category, name, onSale);
     }
 
     @GetMapping("/{id}")

@@ -14,4 +14,6 @@ public record ProductRequest(
         @NotNull(message = "Estoque é obrigatório") @Min(value = 0, message = "Estoque não pode ser negativo")
                 Integer stock,
         String imageUrl,
-        @NotNull(message = "Categoria é obrigatória") Long categoryId) {}
+        @NotNull(message = "Categoria é obrigatória") Long categoryId,
+        boolean onSale,
+        @DecimalMin(value = "0.01", message = "Preço promocional deve ser maior que zero") BigDecimal discountPrice) {}

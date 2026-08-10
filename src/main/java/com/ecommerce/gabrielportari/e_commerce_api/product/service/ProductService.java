@@ -2,6 +2,7 @@ package com.ecommerce.gabrielportari.e_commerce_api.product.service;
 
 import com.ecommerce.gabrielportari.e_commerce_api.category.entity.Category;
 import com.ecommerce.gabrielportari.e_commerce_api.category.repository.CategoryRepository;
+import com.ecommerce.gabrielportari.e_commerce_api.exception.BusinessException;
 import com.ecommerce.gabrielportari.e_commerce_api.exception.ResourceNotFoundException;
 import com.ecommerce.gabrielportari.e_commerce_api.product.dto.ProductRequest;
 import com.ecommerce.gabrielportari.e_commerce_api.product.dto.ProductResponse;
@@ -22,7 +23,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> findAllActive(Long categoryId, String name) {
+    public List<ProductResponse> findAllActive(Long categoryId, String name, Boolean onSale) {
         Specification<Product> spec = ProductSpecifications.active(true);
 
         if (categoryId != null) {
@@ -30,6 +31,9 @@ public class ProductService {
         }
         if (name != null && !name.isBlank()) {
             spec = spec.and(ProductSpecifications.nameContains(name));
+        }
+        if (onSale != null) {
+            spec = spec.and(ProductSpecifications.onSaleEquals(onSale));
         }
 
         return productRepository.findAll(spec).stream().map(ProductResponse::fromEntity).toList();
@@ -52,6 +56,7 @@ public class ProductService {
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Category category = findCategoryById(request.categoryId());
+        validatePromotion(request);
 
         Product product = Product.builder()
                 .name(request.name())
@@ -61,6 +66,8 @@ public class ProductService {
                 .imageUrl(request.imageUrl())
                 .category(category)
                 .active(true)
+                .onSale(request.onSale())
+                .discountPrice(request.onSale() ? request.discountPrice() : null)
                 .build();
 
         return ProductResponse.fromEntity(productRepository.save(product));
@@ -70,6 +77,7 @@ public class ProductService {
     public ProductResponse update(Long id, ProductRequest request) {
         Product product = findEntityById(id);
         Category category = findCategoryById(request.categoryId());
+        validatePromotion(request);
 
         product.setName(request.name());
         product.setDescription(request.description());
@@ -77,8 +85,22 @@ public class ProductService {
         product.setStock(request.stock());
         product.setImageUrl(request.imageUrl());
         product.setCategory(category);
+        product.setOnSale(request.onSale());
+        product.setDiscountPrice(request.onSale() ? request.discountPrice() : null);
 
         return ProductResponse.fromEntity(productRepository.save(product));
+    }
+
+    private void validatePromotion(ProductRequest request) {
+        if (!request.onSale()) {
+            return;
+        }
+        if (request.discountPrice() == null) {
+            throw new BusinessException("Preço promocional é obrigatório para produtos em promoção");
+        }
+        if (request.discountPrice().compareTo(request.price()) >= 0) {
+            throw new BusinessException("Preço promocional deve ser menor que o preço original");
+        }
     }
 
     @Transactional

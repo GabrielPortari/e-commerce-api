@@ -18,4 +18,8 @@ public final class ProductSpecifications {
     public static Specification<Product> nameContains(String name) {
         return (root, query, cb) -> cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
     }
+
+    public static Specification<Product> onSaleEquals(boolean onSale) {
+        return (root, query, cb) -> cb.equal(root.get("onSale"), onSale);
+    }
 }

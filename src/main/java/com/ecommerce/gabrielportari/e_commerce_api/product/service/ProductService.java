@@ -9,6 +9,7 @@ import com.ecommerce.gabrielportari.e_commerce_api.product.dto.ProductResponse;
 import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductRepository;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductSpecifications;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -67,7 +68,7 @@ public class ProductService {
                 .category(category)
                 .active(true)
                 .onSale(request.onSale())
-                .discountPrice(request.onSale() ? request.discountPrice() : null)
+                .discountPrice(resolveDiscountPrice(request))
                 .build();
 
         return ProductResponse.fromEntity(productRepository.save(product));
@@ -86,9 +87,13 @@ public class ProductService {
         product.setImageUrl(request.imageUrl());
         product.setCategory(category);
         product.setOnSale(request.onSale());
-        product.setDiscountPrice(request.onSale() ? request.discountPrice() : null);
+        product.setDiscountPrice(resolveDiscountPrice(request));
 
         return ProductResponse.fromEntity(productRepository.save(product));
+    }
+
+    private BigDecimal resolveDiscountPrice(ProductRequest request) {
+        return request.onSale() ? request.discountPrice() : null;
     }
 
     private void validatePromotion(ProductRequest request) {

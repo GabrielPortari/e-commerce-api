@@ -69,4 +69,8 @@ public class Product {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public BigDecimal getEffectivePrice() {
+        return Boolean.TRUE.equals(onSale) && discountPrice != null ? discountPrice : price;
+    }
 }

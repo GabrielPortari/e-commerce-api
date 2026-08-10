@@ -57,15 +57,17 @@ public class OrderService {
             product.setStock(product.getStock() - cartItem.getQuantity());
             productRepository.save(product);
 
+            BigDecimal unitPrice = product.getEffectivePrice();
+
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(product)
                     .quantity(cartItem.getQuantity())
-                    .unitPrice(product.getPrice())
+                    .unitPrice(unitPrice)
                     .build();
             order.getItems().add(orderItem);
 
-            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+            total = total.add(unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
         order.setTotal(total);

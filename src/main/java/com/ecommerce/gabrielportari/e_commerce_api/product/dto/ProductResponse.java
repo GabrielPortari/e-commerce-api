@@ -14,6 +14,8 @@ public record ProductResponse(
         String imageUrl,
         CategoryResponse category,
         Boolean active,
+        Boolean onSale,
+        BigDecimal discountPrice,
         LocalDateTime createdAt) {
 
     public static ProductResponse fromEntity(Product product) {
@@ -26,6 +28,8 @@ public record ProductResponse(
                 product.getImageUrl(),
                 CategoryResponse.fromEntity(product.getCategory()),
                 product.getActive(),
+                product.getOnSale(),
+                product.getDiscountPrice(),
                 product.getCreatedAt());
     }
 }

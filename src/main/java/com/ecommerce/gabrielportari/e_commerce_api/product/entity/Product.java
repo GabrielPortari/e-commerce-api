@@ -55,11 +55,22 @@ public class Product {
     @Builder.Default
     private Boolean active = true;
 
+    @Column(name = "on_sale", nullable = false)
+    @Builder.Default
+    private Boolean onSale = false;
+
+    @Column(name = "discount_price", precision = 10, scale = 2)
+    private BigDecimal discountPrice;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public BigDecimal getEffectivePrice() {
+        return Boolean.TRUE.equals(onSale) && discountPrice != null ? discountPrice : price;
     }
 }

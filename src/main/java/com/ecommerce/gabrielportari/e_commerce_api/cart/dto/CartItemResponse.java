@@ -13,7 +13,7 @@ public record CartItemResponse(
         BigDecimal subtotal) {
 
     public static CartItemResponse fromEntity(CartItem item) {
-        BigDecimal unitPrice = item.getProduct().getPrice();
+        BigDecimal unitPrice = item.getProduct().getEffectivePrice();
         BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
 
         return new CartItemResponse(

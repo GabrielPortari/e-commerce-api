@@ -39,6 +39,11 @@ public class ProductController {
         return productService.findActiveById(id);
     }
 
+    @GetMapping("/slug/{slug}")
+    public ProductResponse findBySlug(@PathVariable String slug) {
+        return productService.findActiveBySlug(slug);
+    }
+
     @PostMapping
     public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));

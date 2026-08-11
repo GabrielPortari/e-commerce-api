@@ -40,6 +40,9 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true, length = 220)
+    private String slug;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -91,6 +94,12 @@ public class Product {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.slug == null || this.slug.isBlank()) {
+            String base = name == null
+                    ? "produto"
+                    : name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-+|-+$)", "");
+            this.slug = (base.isBlank() ? "produto" : base) + "-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        }
     }
 
     public BigDecimal getEffectivePrice() {

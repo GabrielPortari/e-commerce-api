@@ -10,6 +10,7 @@ import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductRepository;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductSpecifications;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -57,6 +58,17 @@ public class ProductService {
         return ProductResponse.fromEntity(product);
     }
 
+    @Transactional(readOnly = true)
+    public ProductResponse findActiveBySlug(String slug) {
+        Product product = productRepository
+                .findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + slug));
+        if (!product.getActive()) {
+            throw new ResourceNotFoundException("Produto não encontrado: " + slug);
+        }
+        return ProductResponse.fromEntity(product);
+    }
+
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Category category = findCategoryById(request.categoryId());
@@ -64,6 +76,7 @@ public class ProductService {
 
         Product product = Product.builder()
                 .name(request.name())
+                .slug(generateUniqueSlug(request.name()))
                 .description(request.description())
                 .price(request.price())
                 .stock(request.stock())
@@ -125,6 +138,25 @@ public class ProductService {
         Product product = findEntityById(id);
         product.setActive(true);
         return ProductResponse.fromEntity(productRepository.save(product));
+    }
+
+    private String generateUniqueSlug(String name) {
+        String base = slugify(name);
+        String slug = base;
+        int suffix = 2;
+        while (productRepository.existsBySlug(slug)) {
+            slug = base + "-" + suffix++;
+        }
+        return slug;
+    }
+
+    private String slugify(String name) {
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String slug = normalized
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        return slug.isBlank() ? "produto" : slug;
     }
 
     private Product findEntityById(Long id) {

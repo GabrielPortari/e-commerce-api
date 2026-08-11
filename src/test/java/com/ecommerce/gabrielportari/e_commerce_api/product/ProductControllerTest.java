@@ -67,6 +67,52 @@ class ProductControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void findBySlug_returnsMatchingProduct() throws Exception {
+        Product product = productRepository.save(Product.builder()
+                .name("Produto Buscável")
+                .slug("produto-buscavel")
+                .price(new BigDecimal("10.00"))
+                .stock(1)
+                .category(category())
+                .active(true)
+                .build());
+
+        mockMvc.perform(get("/api/products/slug/produto-buscavel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(product.getId()))
+                .andExpect(jsonPath("$.name").value("Produto Buscável"));
+    }
+
+    @Test
+    void findBySlug_whenNotFound_returns404() throws Exception {
+        mockMvc.perform(get("/api/products/slug/inexistente")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void create_generatesUniqueSlugFromName() throws Exception {
+        Long categoryId = category().getId();
+        String payload =
+                """
+                {"name":"Camiseta Polo","price":99.90,"stock":10,"categoryId":%d,"onSale":false,"featured":false}
+                """
+                        .formatted(categoryId);
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.slug").value("camiseta-polo"));
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.slug").value("camiseta-polo-2"));
+    }
+
+    @Test
     void create_withoutToken_isForbidden() throws Exception {
         mockMvc.perform(post("/api/products")
                         .contentType(MediaType.APPLICATION_JSON)

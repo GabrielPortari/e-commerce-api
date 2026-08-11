@@ -62,6 +62,10 @@ public class Product {
     @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean featured = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

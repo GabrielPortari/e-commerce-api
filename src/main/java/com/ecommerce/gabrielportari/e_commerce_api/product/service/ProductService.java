@@ -24,7 +24,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> findAllActive(Long categoryId, String name, Boolean onSale) {
+    public List<ProductResponse> findAllActive(Long categoryId, String name, Boolean onSale, Boolean featured) {
         Specification<Product> spec = ProductSpecifications.active(true);
 
         if (categoryId != null) {
@@ -35,6 +35,9 @@ public class ProductService {
         }
         if (onSale != null) {
             spec = spec.and(ProductSpecifications.onSaleEquals(onSale));
+        }
+        if (featured != null) {
+            spec = spec.and(ProductSpecifications.featuredEquals(featured));
         }
 
         return productRepository.findAll(spec).stream().map(ProductResponse::fromEntity).toList();
@@ -69,6 +72,7 @@ public class ProductService {
                 .active(true)
                 .onSale(request.onSale())
                 .discountPrice(resolveDiscountPrice(request))
+                .featured(request.featured())
                 .build();
 
         return ProductResponse.fromEntity(productRepository.save(product));
@@ -88,6 +92,7 @@ public class ProductService {
         product.setCategory(category);
         product.setOnSale(request.onSale());
         product.setDiscountPrice(resolveDiscountPrice(request));
+        product.setFeatured(request.featured());
 
         return ProductResponse.fromEntity(productRepository.save(product));
     }
@@ -113,6 +118,13 @@ public class ProductService {
         Product product = findEntityById(id);
         product.setActive(false);
         productRepository.save(product);
+    }
+
+    @Transactional
+    public ProductResponse reactivate(Long id) {
+        Product product = findEntityById(id);
+        product.setActive(true);
+        return ProductResponse.fromEntity(productRepository.save(product));
     }
 
     private Product findEntityById(Long id) {

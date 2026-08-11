@@ -16,4 +16,5 @@ public record ProductRequest(
         String imageUrl,
         @NotNull(message = "Categoria é obrigatória") Long categoryId,
         boolean onSale,
-        @DecimalMin(value = "0.01", message = "Preço promocional deve ser maior que zero") BigDecimal discountPrice) {}
+        @DecimalMin(value = "0.01", message = "Preço promocional deve ser maior que zero") BigDecimal discountPrice,
+        boolean featured) {}

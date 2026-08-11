@@ -29,8 +29,9 @@ public class ProductController {
     public List<ProductResponse> findAll(
             @RequestParam(required = false) Long category,
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) Boolean onSale) {
-        return productService.findAllActive(category, name, onSale);
+            @RequestParam(required = false) Boolean onSale,
+            @RequestParam(required = false) Boolean featured) {
+        return productService.findAllActive(category, name, onSale, featured);
     }
 
     @GetMapping("/{id}")
@@ -52,5 +53,10 @@ public class ProductController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.softDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/reactivate")
+    public ProductResponse reactivate(@PathVariable Long id) {
+        return productService.reactivate(id);
     }
 }

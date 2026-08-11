@@ -1,6 +1,7 @@
 package com.ecommerce.gabrielportari.e_commerce_api.product.entity;
 
 import com.ecommerce.gabrielportari.e_commerce_api.category.entity.Category;
+import com.ecommerce.gabrielportari.e_commerce_api.review.entity.Review;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -81,6 +82,12 @@ public class Product {
     @Builder.Default
     private List<ProductImage> images = new ArrayList<>();
 
+    // Sem cascade, mesmo motivo de images acima — ReviewService cuida do
+    // ciclo de vida direto pelo ReviewRepository.
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Review> reviews = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -88,5 +95,15 @@ public class Product {
 
     public BigDecimal getEffectivePrice() {
         return Boolean.TRUE.equals(onSale) && discountPrice != null ? discountPrice : price;
+    }
+
+    public Double getAverageRating() {
+        return reviews.isEmpty()
+                ? null
+                : reviews.stream().mapToInt(Review::getRating).average().orElse(0);
+    }
+
+    public Integer getReviewCount() {
+        return reviews.size();
     }
 }

@@ -19,6 +19,8 @@ public record ProductResponse(
         Boolean onSale,
         BigDecimal discountPrice,
         Boolean featured,
+        Double averageRating,
+        Integer reviewCount,
         LocalDateTime createdAt) {
 
     public static ProductResponse fromEntity(Product product) {
@@ -35,6 +37,8 @@ public record ProductResponse(
                 product.getOnSale(),
                 product.getDiscountPrice(),
                 product.getFeatured(),
+                product.getAverageRating(),
+                product.getReviewCount(),
                 product.getCreatedAt());
     }
 }

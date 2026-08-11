@@ -1,5 +1,7 @@
 package com.ecommerce.gabrielportari.e_commerce_api;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +44,21 @@ public abstract class AbstractIntegrationTest {
 
     @Autowired
     protected ObjectMapper objectMapper;
+
+    @PersistenceContext
+    protected EntityManager entityManager;
+
+    /**
+     * Várias chamadas MockMvc num teste compartilham a mesma transação/sessão Hibernate (efeito do
+     * @Transactional acima), diferente da produção, onde cada request tem sua própria. Sem isso,
+     * uma entidade lida antes de outra chamada mutar dados relacionados (ex.: coleção lazy) fica
+     * presa no cache de 1º nível com o estado antigo — não é bug de produção, é artefato do teste.
+     * Chame entre um "request" que muda dado e outro que lê, simulando sessões separadas.
+     */
+    protected void flushAndClearPersistenceContext() {
+        entityManager.flush();
+        entityManager.clear();
+    }
 
     protected String adminToken() throws Exception {
         String body =

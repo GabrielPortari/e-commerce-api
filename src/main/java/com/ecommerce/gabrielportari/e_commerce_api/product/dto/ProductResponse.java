@@ -4,6 +4,7 @@ import com.ecommerce.gabrielportari.e_commerce_api.category.dto.CategoryResponse
 import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ProductResponse(
         Long id,
@@ -12,6 +13,7 @@ public record ProductResponse(
         BigDecimal price,
         Integer stock,
         String imageUrl,
+        List<ProductImageResponse> images,
         CategoryResponse category,
         Boolean active,
         Boolean onSale,
@@ -27,6 +29,7 @@ public record ProductResponse(
                 product.getPrice(),
                 product.getStock(),
                 product.getImageUrl(),
+                product.getImages().stream().map(ProductImageResponse::fromEntity).toList(),
                 CategoryResponse.fromEntity(product.getCategory()),
                 product.getActive(),
                 product.getOnSale(),

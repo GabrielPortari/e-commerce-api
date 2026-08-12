@@ -29,6 +29,17 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // HSTS is only emitted by Spring Security when request.isSecure() is true. If TLS
+                // terminates at a reverse proxy, that requires server.forward-headers-strategy=framework
+                // (or native) PLUS a proxy that strips any client-supplied X-Forwarded-* — enabling it
+                // without a trusted proxy in front would let clients spoof their own IP, undermining
+                // RateLimitFilter. Left off here; turn it on only once the deployment topology is known.
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(
+                                hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                        .contentSecurityPolicy(csp ->
+                                csp.policyDirectives("default-src 'none'; img-src 'self'; frame-ancestors 'none'")))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()

@@ -1,12 +1,14 @@
 package com.ecommerce.gabrielportari.e_commerce_api.product.service;
 
 import com.ecommerce.gabrielportari.e_commerce_api.exception.BusinessException;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -35,6 +37,16 @@ public class FileStorageService {
         }
         if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
             throw new BusinessException("Formato de imagem não suportado. Use PNG, JPEG ou WEBP");
+        }
+
+        BufferedImage image;
+        try {
+            image = ImageIO.read(file.getInputStream());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Falha ao ler a imagem enviada", ex);
+        }
+        if (image == null) {
+            throw new BusinessException("Arquivo enviado não é uma imagem válida");
         }
 
         String extension = StringUtils.getFilenameExtension(file.getOriginalFilename());

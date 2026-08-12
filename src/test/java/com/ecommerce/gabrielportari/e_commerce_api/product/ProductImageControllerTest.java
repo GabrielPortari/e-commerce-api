@@ -83,4 +83,33 @@ class ProductImageControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    @Test
+    void addImage_afterDeletingEarlierImage_doesNotReuseDisplayOrder() throws Exception {
+        Product product = product();
+        MockMultipartFile file = new MockMultipartFile("file", "foto.png", "image/png", new byte[] {1, 2, 3});
+        String token = adminToken();
+
+        String firstResponse = mockMvc.perform(multipart("/api/products/" + product.getId() + "/images")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        Long firstImageId = objectMapper.readTree(firstResponse).get(0).get("id").asLong();
+
+        mockMvc.perform(multipart("/api/products/" + product.getId() + "/images")
+                .file(file)
+                .header("Authorization", "Bearer " + token));
+
+        mockMvc.perform(delete("/api/products/" + product.getId() + "/images/" + firstImageId)
+                .header("Authorization", "Bearer " + token));
+
+        mockMvc.perform(multipart("/api/products/" + product.getId() + "/images")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].displayOrder").value(1))
+                .andExpect(jsonPath("$[1].displayOrder").value(2));
+    }
 }

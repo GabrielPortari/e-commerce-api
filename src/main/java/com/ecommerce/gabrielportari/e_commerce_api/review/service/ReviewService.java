@@ -31,6 +31,9 @@ public class ReviewService {
         Product product = productRepository
                 .findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + productId));
+        if (!product.getActive()) {
+            throw new ResourceNotFoundException("Produto não encontrado: " + productId);
+        }
 
         Review review = Review.builder()
                 .product(product)

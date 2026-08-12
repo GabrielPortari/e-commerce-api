@@ -56,6 +56,21 @@ class ReviewControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void create_onInactiveProduct_returns404() throws Exception {
+        Product product = product();
+        product.setActive(false);
+        productRepository.save(product);
+
+        mockMvc.perform(post("/api/products/" + product.getId() + "/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                """
+                                {"authorName":"Ana","rating":5}
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void create_withRatingOutOfRange_returns400() throws Exception {
         Product product = product();
 

@@ -27,7 +27,8 @@ public class ProductGalleryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + productId));
 
         String imageUrl = fileStorageService.store(file);
-        int nextOrder = (int) productImageRepository.countByProductId(productId);
+        List<ProductImage> existingImages = productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId);
+        int nextOrder = existingImages.stream().mapToInt(ProductImage::getDisplayOrder).max().orElse(-1) + 1;
 
         ProductImage image = ProductImage.builder()
                 .product(product)

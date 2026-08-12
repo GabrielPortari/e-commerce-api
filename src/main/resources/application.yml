@@ -29,3 +29,6 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   upload:
     dir: ${UPLOAD_DIR:uploads}
+  admin-bootstrap:
+    email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}

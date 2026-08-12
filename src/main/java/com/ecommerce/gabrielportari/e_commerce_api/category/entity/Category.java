@@ -27,4 +27,10 @@ public class Category {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    // Categoria fallback (seed "Geral", migration V9) — produtos de uma categoria removida
+    // são reatribuídos a ela em vez de bloquear a remoção. Nunca pode ser removida.
+    @Column(name = "is_default", nullable = false)
+    @Builder.Default
+    private Boolean isDefault = false;
 }

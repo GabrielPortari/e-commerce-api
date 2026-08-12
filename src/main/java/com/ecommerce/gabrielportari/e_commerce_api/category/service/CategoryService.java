@@ -6,6 +6,7 @@ import com.ecommerce.gabrielportari.e_commerce_api.category.entity.Category;
 import com.ecommerce.gabrielportari.e_commerce_api.category.repository.CategoryRepository;
 import com.ecommerce.gabrielportari.e_commerce_api.exception.BusinessException;
 import com.ecommerce.gabrielportari.e_commerce_api.exception.ResourceNotFoundException;
+import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -50,8 +51,17 @@ public class CategoryService {
     public void delete(Long id) {
         Category category = findEntityById(id);
 
-        if (productRepository.existsByCategoryId(category.getId())) {
-            throw new BusinessException("Não é possível remover uma categoria com produtos vinculados");
+        if (Boolean.TRUE.equals(category.getIsDefault())) {
+            throw new BusinessException("A categoria padrão não pode ser removida");
+        }
+
+        List<Product> products = productRepository.findByCategoryId(category.getId());
+        if (!products.isEmpty()) {
+            Category defaultCategory = categoryRepository
+                    .findByIsDefaultTrue()
+                    .orElseThrow(() -> new IllegalStateException("Categoria padrão não encontrada"));
+            products.forEach(product -> product.setCategory(defaultCategory));
+            productRepository.saveAll(products);
         }
 
         categoryRepository.delete(category);

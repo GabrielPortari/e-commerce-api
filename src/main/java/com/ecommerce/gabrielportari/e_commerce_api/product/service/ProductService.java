@@ -10,6 +10,7 @@ import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductRepository;
 import com.ecommerce.gabrielportari.e_commerce_api.product.repository.ProductSpecifications;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,7 +25,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
-    public List<ProductResponse> findAllActive(Long categoryId, String name, Boolean onSale) {
+    public List<ProductResponse> findAllActive(Long categoryId, String name, Boolean onSale, Boolean featured) {
         Specification<Product> spec = ProductSpecifications.active(true);
 
         if (categoryId != null) {
@@ -35,6 +36,9 @@ public class ProductService {
         }
         if (onSale != null) {
             spec = spec.and(ProductSpecifications.onSaleEquals(onSale));
+        }
+        if (featured != null) {
+            spec = spec.and(ProductSpecifications.featuredEquals(featured));
         }
 
         return productRepository.findAll(spec).stream().map(ProductResponse::fromEntity).toList();
@@ -54,6 +58,17 @@ public class ProductService {
         return ProductResponse.fromEntity(product);
     }
 
+    @Transactional(readOnly = true)
+    public ProductResponse findActiveBySlug(String slug) {
+        Product product = productRepository
+                .findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + slug));
+        if (!product.getActive()) {
+            throw new ResourceNotFoundException("Produto não encontrado: " + slug);
+        }
+        return ProductResponse.fromEntity(product);
+    }
+
     @Transactional
     public ProductResponse create(ProductRequest request) {
         Category category = findCategoryById(request.categoryId());
@@ -61,6 +76,7 @@ public class ProductService {
 
         Product product = Product.builder()
                 .name(request.name())
+                .slug(generateUniqueSlug(request.name()))
                 .description(request.description())
                 .price(request.price())
                 .stock(request.stock())
@@ -69,6 +85,7 @@ public class ProductService {
                 .active(true)
                 .onSale(request.onSale())
                 .discountPrice(resolveDiscountPrice(request))
+                .featured(request.featured())
                 .build();
 
         return ProductResponse.fromEntity(productRepository.save(product));
@@ -88,6 +105,7 @@ public class ProductService {
         product.setCategory(category);
         product.setOnSale(request.onSale());
         product.setDiscountPrice(resolveDiscountPrice(request));
+        product.setFeatured(request.featured());
 
         return ProductResponse.fromEntity(productRepository.save(product));
     }
@@ -113,6 +131,32 @@ public class ProductService {
         Product product = findEntityById(id);
         product.setActive(false);
         productRepository.save(product);
+    }
+
+    @Transactional
+    public ProductResponse reactivate(Long id) {
+        Product product = findEntityById(id);
+        product.setActive(true);
+        return ProductResponse.fromEntity(productRepository.save(product));
+    }
+
+    private String generateUniqueSlug(String name) {
+        String base = slugify(name);
+        String slug = base;
+        int suffix = 2;
+        while (productRepository.existsBySlug(slug)) {
+            slug = base + "-" + suffix++;
+        }
+        return slug;
+    }
+
+    private String slugify(String name) {
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String slug = normalized
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+|-+$)", "");
+        return slug.isBlank() ? "produto" : slug;
     }
 
     private Product findEntityById(Long id) {

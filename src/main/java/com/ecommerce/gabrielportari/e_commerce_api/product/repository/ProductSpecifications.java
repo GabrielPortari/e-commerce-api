@@ -22,4 +22,8 @@ public final class ProductSpecifications {
     public static Specification<Product> onSaleEquals(boolean onSale) {
         return (root, query, cb) -> cb.equal(root.get("onSale"), onSale);
     }
+
+    public static Specification<Product> featuredEquals(boolean featured) {
+        return (root, query, cb) -> cb.equal(root.get("featured"), featured);
+    }
 }

@@ -1,6 +1,7 @@
 package com.ecommerce.gabrielportari.e_commerce_api.product.entity;
 
 import com.ecommerce.gabrielportari.e_commerce_api.category.entity.Category;
+import com.ecommerce.gabrielportari.e_commerce_api.review.entity.Review;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,10 +10,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,6 +39,9 @@ public class Product {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, unique = true, length = 220)
+    private String slug;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -62,15 +70,49 @@ public class Product {
     @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean featured = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // Fotos extras da galeria (ver ProductImage) — a capa é imageUrl acima.
+    // Sem cascade: ProductGalleryService cuida do ciclo de vida diretamente
+    // pelo ProductImageRepository, essa coleção é só leitura pra resposta.
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @OrderBy("displayOrder ASC")
+    @Builder.Default
+    private List<ProductImage> images = new ArrayList<>();
+
+    // Sem cascade, mesmo motivo de images acima — ReviewService cuida do
+    // ciclo de vida direto pelo ReviewRepository.
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Review> reviews = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.slug == null || this.slug.isBlank()) {
+            String base = name == null
+                    ? "produto"
+                    : name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-+|-+$)", "");
+            this.slug = (base.isBlank() ? "produto" : base) + "-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        }
     }
 
     public BigDecimal getEffectivePrice() {
         return Boolean.TRUE.equals(onSale) && discountPrice != null ? discountPrice : price;
+    }
+
+    public Double getAverageRating() {
+        return reviews.isEmpty()
+                ? null
+                : reviews.stream().mapToInt(Review::getRating).average().orElse(0);
+    }
+
+    public Integer getReviewCount() {
+        return reviews.size();
     }
 }

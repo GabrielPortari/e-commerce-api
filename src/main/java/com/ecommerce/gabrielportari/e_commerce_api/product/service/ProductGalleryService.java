@@ -1,5 +1,6 @@
 package com.ecommerce.gabrielportari.e_commerce_api.product.service;
 
+import com.ecommerce.gabrielportari.e_commerce_api.exception.BusinessException;
 import com.ecommerce.gabrielportari.e_commerce_api.exception.ResourceNotFoundException;
 import com.ecommerce.gabrielportari.e_commerce_api.product.dto.ProductImageResponse;
 import com.ecommerce.gabrielportari.e_commerce_api.product.entity.Product;
@@ -20,14 +21,20 @@ public class ProductGalleryService {
     private final ProductRepository productRepository;
     private final FileStorageService fileStorageService;
 
+    private static final int MAX_IMAGES_PER_PRODUCT = 3;
+
     @Transactional
     public List<ProductImageResponse> addImage(Long productId, MultipartFile file) {
         Product product = productRepository
                 .findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado: " + productId));
 
-        String imageUrl = fileStorageService.store(file);
         List<ProductImage> existingImages = productImageRepository.findByProductIdOrderByDisplayOrderAsc(productId);
+        if (existingImages.size() >= MAX_IMAGES_PER_PRODUCT) {
+            throw new BusinessException("Limite de " + MAX_IMAGES_PER_PRODUCT + " imagens por produto atingido");
+        }
+
+        String imageUrl = fileStorageService.store(file);
         int nextOrder = existingImages.stream().mapToInt(ProductImage::getDisplayOrder).max().orElse(-1) + 1;
 
         ProductImage image = ProductImage.builder()

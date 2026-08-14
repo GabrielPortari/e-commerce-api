@@ -1,10 +1,11 @@
 package com.ecommerce.gabrielportari.e_commerce_api.review.controller;
 
+import com.ecommerce.gabrielportari.e_commerce_api.review.dto.ReviewPageResponse;
 import com.ecommerce.gabrielportari.e_commerce_api.review.dto.ReviewRequest;
 import com.ecommerce.gabrielportari.e_commerce_api.review.dto.ReviewResponse;
 import com.ecommerce.gabrielportari.e_commerce_api.review.service.ReviewService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -23,14 +25,28 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @GetMapping("/api/products/{productId}/reviews")
-    public List<ReviewResponse> findByProduct(@PathVariable Long productId) {
-        return reviewService.findByProduct(productId);
+    public ReviewPageResponse findByProduct(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "recent") String sort) {
+        return reviewService.findByProduct(productId, page, size, sort);
     }
 
     @PostMapping("/api/products/{productId}/reviews")
     public ResponseEntity<ReviewResponse> create(
-            @PathVariable Long productId, @Valid @RequestBody ReviewRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.create(productId, request));
+            @PathVariable Long productId,
+            @Valid @RequestBody ReviewRequest request,
+            HttpServletRequest httpRequest) {
+        // getRemoteAddr() (não X-Forwarded-For, que é falsificável pelo cliente) —
+        // atrás de um reverse proxy/load balancer sem server.forward-headers-strategy
+        // configurado, isso vira o IP do proxy pra todo mundo, e o dedup em
+        // ReviewService passaria a bloquear o segundo cliente distinto que tentasse
+        // avaliar o mesmo produto. Mesmo trade-off aceito no rate limiter de login;
+        // revisitar junto quando a topologia de deploy (proxy reverso) for definida.
+        ReviewResponse response =
+                reviewService.create(productId, request, httpRequest.getRemoteAddr());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/api/reviews/{id}")

@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
     private static final int MAX_PAGE_SIZE = 50;
+    private static final String DUPLICATE_REVIEW_MESSAGE = "Você já avaliou este produto.";
+    private static final String DUPLICATE_REVIEW_CONSTRAINT = "ux_reviews_product_author_ip";
 
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
@@ -44,7 +46,7 @@ public class ReviewService {
             throw new ResourceNotFoundException("Produto não encontrado: " + productId);
         }
         if (reviewRepository.existsByProductIdAndAuthorIp(productId, authorIp)) {
-            throw new DuplicateReviewException("Você já avaliou este produto.");
+            throw new DuplicateReviewException(DUPLICATE_REVIEW_MESSAGE);
         }
 
         Review review = Review.builder()
@@ -61,10 +63,16 @@ public class ReviewService {
             // transação, fora deste try/catch.
             return ReviewResponse.fromEntity(reviewRepository.saveAndFlush(review));
         } catch (DataIntegrityViolationException ex) {
-            // Corrida entre duas requisições simultâneas do mesmo IP passando pelo
-            // existsBy acima antes de qualquer uma salvar — o índice único
-            // (ux_reviews_product_author_ip) barra a segunda no banco.
-            throw new DuplicateReviewException("Você já avaliou este produto.");
+            // Só reinterpreta como "duplicada" se for de fato o índice único
+            // (corrida entre duas requisições simultâneas do mesmo IP passando pelo
+            // existsBy acima antes de qualquer uma salvar). Qualquer outra violação
+            // (ex.: produto apagado entre o findById e este flush, quebrando a FK)
+            // é um erro genuíno e deve virar 500, não um 409 enganoso.
+            String cause = ex.getMostSpecificCause().getMessage();
+            if (cause != null && cause.contains(DUPLICATE_REVIEW_CONSTRAINT)) {
+                throw new DuplicateReviewException(DUPLICATE_REVIEW_MESSAGE);
+            }
+            throw ex;
         }
     }
 

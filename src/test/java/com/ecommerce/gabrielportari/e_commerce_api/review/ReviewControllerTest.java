@@ -182,6 +182,14 @@ class ReviewControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void findByProduct_withNonNumericPage_returns400() throws Exception {
+        Product product = product();
+
+        mockMvc.perform(get("/api/products/" + product.getId() + "/reviews").param("page", "abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void create_sameIpTwiceOnSameProduct_returns409ButDifferentIpIsAllowed() throws Exception {
         Product product = product();
         String body =

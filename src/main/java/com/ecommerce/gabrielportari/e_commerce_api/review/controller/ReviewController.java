@@ -38,6 +38,12 @@ public class ReviewController {
             @PathVariable Long productId,
             @Valid @RequestBody ReviewRequest request,
             HttpServletRequest httpRequest) {
+        // getRemoteAddr() (não X-Forwarded-For, que é falsificável pelo cliente) —
+        // atrás de um reverse proxy/load balancer sem server.forward-headers-strategy
+        // configurado, isso vira o IP do proxy pra todo mundo, e o dedup em
+        // ReviewService passaria a bloquear o segundo cliente distinto que tentasse
+        // avaliar o mesmo produto. Mesmo trade-off aceito no rate limiter de login;
+        // revisitar junto quando a topologia de deploy (proxy reverso) for definida.
         ReviewResponse response =
                 reviewService.create(productId, request, httpRequest.getRemoteAddr());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

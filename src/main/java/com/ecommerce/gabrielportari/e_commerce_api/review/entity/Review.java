@@ -40,6 +40,12 @@ public class Review {
     @Column(name = "author_name", nullable = false, length = 120)
     private String authorName;
 
+    // IP de quem enviou, usado só pra impedir duas avaliações do mesmo IP no
+    // mesmo produto (ver ux_reviews_product_author_ip) — nunca exposto em
+    // ReviewResponse.
+    @Column(name = "author_ip", length = 45)
+    private String authorIp;
+
     @Column(nullable = false)
     private Integer rating;
 
